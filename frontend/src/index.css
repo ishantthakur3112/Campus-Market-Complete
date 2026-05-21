@@ -1,0 +1,35 @@
+﻿* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+#browse-listings {
+  scroll-margin-top: 100px;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    linear-gradient(rgba(7, 17, 31, 0.72), rgba(7, 17, 31, 0.82)),
+    url("/bgimg.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.content-container {
+  width: min(1200px, calc(100% - 32px));
+  margin: 0 auto;
+}

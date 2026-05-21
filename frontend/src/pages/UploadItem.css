@@ -1,0 +1,211 @@
+﻿.upload-container {
+  min-height: calc(100vh - 130px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 4rem 1.5rem 3rem;
+}
+
+.upload-card {
+  width: min(640px, 100%);
+  padding: 3rem 2.5rem;
+  border-radius: 28px;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.upload-card h2 {
+  margin: 0;
+  font-size: clamp(2rem, 3vw, 2.4rem);
+}
+
+.upload-card h2 .highlight {
+  color: var(--secondary);
+}
+
+.upload-card label {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.upload-card input,
+.upload-card select,
+.upload-card textarea {
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  padding: 1rem 1.1rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  font-size: 1rem;
+}
+
+.upload-card input[type="file"] {
+  padding: 0.75rem 1rem;
+}
+
+.upload-card select {
+  appearance: none;
+}
+
+.upload-card textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+
+.upload-card input:focus,
+.upload-card select:focus,
+.upload-card textarea:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.85);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+}
+
+.auth-btn {
+  width: 100%;
+  padding: 1rem 1.2rem;
+  border-radius: 16px;
+  background: var(--accent-grad);
+  border: none;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 18px 40px rgba(59, 130, 246, 0.2);
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.auth-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+@media (max-width: 560px) {
+  .upload-card {
+    padding: 2rem 1.5rem;
+  }
+}
+.upload-page {
+  min-height: calc(100vh - 160px);
+  padding: 40px 16px 60px;
+}
+
+.upload-container {
+  width: min(900px, 100%);
+  margin: 0 auto;
+  padding: 32px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(22, 31, 48, 0.94), rgba(13, 20, 32, 0.98));
+  border: 1px solid rgba(144, 146, 148, 0.2);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.3);
+}
+
+.upload-header {
+  margin-bottom: 28px;
+}
+
+.upload-tag {
+  color: #21d4fd;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.86rem;
+  margin-bottom: 10px;
+}
+
+.upload-header h1 {
+  color: white;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  margin-bottom: 12px;
+  line-height: 1.1;
+}
+
+.upload-subtext {
+  color: #f75656;
+  line-height: 1.7;
+  max-width: 680px;
+}
+
+.upload-form {
+  display: grid;
+  gap: 20px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.form-group {
+  display: grid;
+  gap: 8px;
+}
+
+.form-group label {
+  color: #dfe9f7;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(40, 40, 40, 0.88);
+  color: #ffffff;
+  outline: none;
+  font: inherit;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: #ffffff;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: rgba(33, 212, 253, 0.7);
+  box-shadow: 0 0 0 3px rgba(33, 212, 253, 0.12);
+}
+
+.upload-btn {
+  width: fit-content;
+  border: none;
+  border-radius: 14px;
+  padding: 14px 22px;
+  background: linear-gradient(135deg, #21d4fd, #16b6ff);
+  color: #051019;
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.upload-btn:hover {
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  .upload-container {
+    padding: 24px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .upload-btn {
+    width: 100%;
+  }
+}
