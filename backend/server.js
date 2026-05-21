@@ -52,12 +52,15 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// 4. Setup Cloudinary Storage Engine for Multer
+// 4. Setup Cloudinary Storage Engine for Multer (Robust, Updated Syntax)
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: {
-    folder: "campus_market_listings", // Automatically creates folder in your Cloudinary account
-    allowed_formats: ["jpg", "jpeg", "png", "webp"],
+  params: async (req, file) => {
+    return {
+      folder: "campus_market_listings",
+      format: "jpeg", // Dynamically sanitizes and unifies the file extension
+      public_id: "listing-" + Date.now(),
+    };
   },
 });
 
@@ -326,7 +329,7 @@ app.post(
         listing: newListing,
       });
     } catch (error) {
-      // CHANGED: Force complete explicit string logging into your Render console to trace the exact bug lines
+      // Complete explicit error mapping block tracking string outputs
       console.error("--- DETAILED UPLOAD CRASH LOG ---");
       console.error("Error Message Text:", error.message);
       console.error("Full Error Object Details:", JSON.stringify(error, null, 2));
