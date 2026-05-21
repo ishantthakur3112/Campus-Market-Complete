@@ -1,46 +1,53 @@
-import axios from 'axios';
+import axios from "axios";
 
-// 1. Maintain your existing environment base URL export
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+export const API_BASE_URL = "https://campus-market-complete.onrender.com";
 
-// 2. Instantiate a central Axios engine bound to that URL
 const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true,
 });
 
-// 3. Set up the connecting reference for your React loading state
-let setIsLoadingGlobal = null;
-
-export const attachLoadingInterceptor = (setIsLoadingFn) => {
-  setIsLoadingGlobal = setIsLoadingFn;
-};
-
-// 4. Request Interceptor (API calls trigger -> turns loading spinner ON)
+// Automatically inject token headers on all requests if present
 api.interceptors.request.use(
   (config) => {
-    if (setIsLoadingGlobal) setIsLoadingGlobal(true);
-    
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // CHANGED: Only trigger the global backend instance loader on the absolute first page hit
+    const hasWokenUp = sessionStorage.getItem("server_instance_woken");
+    if (!hasWokenUp) {
+      // Create and mount the dark overlay spinner window
+      const loader = document.createElement("div");
+      loader.id = "global-instance-loader";
+      loader.innerHTML = `
+        <div class="instance-spinner-card">
+          <div class="instance-spinner"></div>
+          <h2>Waking up the server instance...</h2>
+          <p>Please allow up to 50-90 seconds for the initial cold-start load. Thank you for your patience!</p>
+        </div>
+      `;
+      document.body.appendChild(loader);
+      
+      // Mark as woken up immediately so no secondary clicks trigger this element
+      sessionStorage.setItem("server_instance_woken", "true");
+    }
+
     return config;
   },
-  (error) => {
-    if (setIsLoadingGlobal) setIsLoadingGlobal(false);
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// 5. Response Interceptor (Data returns/fails -> turns loading spinner OFF)
+// Clean up the loader element as soon as any response comes back
 api.interceptors.response.use(
   (response) => {
-    if (setIsLoadingGlobal) setIsLoadingGlobal(false);
+    const loader = document.getElementById("global-instance-loader");
+    if (loader) loader.remove();
     return response;
   },
   (error) => {
-    if (setIsLoadingGlobal) setIsLoadingGlobal(false);
+    const loader = document.getElementById("global-instance-loader");
+    if (loader) loader.remove();
     return Promise.reject(error);
   }
 );
