@@ -22,11 +22,10 @@ const MONGO_URI =
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 // 1. Configure allowed origins array
-const allowedOrigins = [FRONTEND_URL];
-if (process.env.LIVE_FRONTEND_URL) {
-  allowedOrigins.push(process.env.LIVE_FRONTEND_URL);
-}
-
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://campus-market-complete.vercel.app"
+];
 // 2. Express CORS Configuration
 app.use(
   cors({
