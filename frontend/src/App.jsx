@@ -1,9 +1,9 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
-import React, { useEffect } from "react";
+import React from "react";
 
-// Import your custom loading configuration modules
-import { LoadingProvider, useLoading } from "./context/LoadingContext";
+// Import your custom configurations
+import { LoadingProvider } from "./context/LoadingContext";
 import api from "./config/api";
 
 import Navbar from "./components/Navbar";
@@ -22,12 +22,8 @@ import ScrollToTop from "./components/ScrollToTop";
 
 // Inner shell execution layer to map the runtime context accurately
 function AppContent() {
-  const { setIsLoading } = useLoading();
-
-  useEffect(() => {
-    // Links your Axios network instances with the global loading UI context
-    attachLoadingInterceptor(setIsLoading);
-  }, [setIsLoading]);
+  // REMOVED: The old useEffect hook and attachLoadingInterceptor execution block 
+  // to prevent runtime ReferenceErrors.
 
   return (
     <BrowserRouter>
