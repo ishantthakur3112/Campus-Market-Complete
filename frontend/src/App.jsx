@@ -4,7 +4,7 @@ import React, { useEffect } from "react";
 
 // Import your custom loading configuration modules
 import { LoadingProvider, useLoading } from "./context/LoadingContext";
-import api, { attachLoadingInterceptor } from "./config/api";
+import api from "./config/api";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
