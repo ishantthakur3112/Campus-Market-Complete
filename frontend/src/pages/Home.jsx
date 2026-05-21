@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
-import { API_BASE_URL } from "../config/api";
+
+// IMPORT YOUR CUSTOM AXIOS INSTANCE INTERCEPTOR
+import api from "../config/api"; 
+
 import "./Home.css";
 
 function Home() {
   const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -16,14 +18,13 @@ function Home() {
   useEffect(() => {
     const fetchListings = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/listings`);
-        const data = await res.json();
-        setItems(Array.isArray(data) ? data : []);
+        // CHANGED: Use the custom api client instance.
+        // It prepends the base URL and automatically triggers the waking spinner overlay.
+        const res = await api.get("/api/listings");
+        setItems(Array.isArray(res.data) ? res.data : []);
       } catch (error) {
         console.error("Error fetching listings:", error);
         setItems([]);
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -66,14 +67,6 @@ function Home() {
     setSelectedCondition("All");
     setMaxPrice("");
   };
-
-  if (loading) {
-    return (
-      <main className="home-page">
-        <h2 className="loading-text">Loading items...</h2>
-      </main>
-    );
-  }
 
   return (
     <main className="home-page">

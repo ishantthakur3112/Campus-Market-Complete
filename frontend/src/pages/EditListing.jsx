@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
-import { API_BASE_URL } from "../config/api";
+
+// IMPORT YOUR CUSTOM AXIOS INSTANCE
+import api, { API_BASE_URL } from "../config/api"; 
+
 import "./EditListing.css";
 
 function EditListing() {
@@ -18,7 +21,6 @@ function EditListing() {
 
   const [image, setImage] = useState(null);
   const [currentImage, setCurrentImage] = useState("");
-  const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
   const redirectWithDelay = (path, delay = 800) => {
@@ -28,16 +30,11 @@ function EditListing() {
   useEffect(() => {
     const fetchListing = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/listings`);
+        // CHANGED: Use central api client. Pre-configured interceptors manage the backing cold-start layout.
+        const res = await api.get("/api/listings");
         
-        // Safely check if response is JSON before parsing
-        const contentType = res.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-            throw new Error("Server returned a non-JSON response");
-        }
-
-        const data = await res.json();
-        const item = data.find((product) => product._id === id);
+        // Find the specific matching item array entry inside res.data
+        const item = res.data.find((product) => product._id === id);
 
         if (!item) {
           toast.error("Listing not found");
@@ -58,8 +55,6 @@ function EditListing() {
         console.error("Fetch listing error:", error);
         toast.error("Failed to load listing");
         redirectWithDelay("/my-uploads");
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -104,34 +99,16 @@ function EditListing() {
           submitData.append("image", image);
         }
 
-        const res = await fetch(`${API_BASE_URL}/api/listings/${id}`, {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: submitData,
-        });
+        // CHANGED: Using custom api endpoint wrapper running a clean Axios PUT method.
+        const res = await api.put(`/api/listings/${id}`, submitData);
 
-        // Safely check if response is JSON before parsing to prevent crash
-        const contentType = res.headers.get("content-type");
-        let data;
-        if (contentType && contentType.includes("application/json")) {
-            data = await res.json();
-        } else {
-            throw new Error(`Server error: ${res.status}`);
-        }
-
-        if (!res.ok) {
-          throw new Error(data.message || "Failed to update listing");
-        }
-
-        return data;
+        return res.data;
       };
 
       await toast.promise(updatePromise(), {
         loading: "Updating listing...",
         success: "Listing updated successfully!",
-        error: (err) => err.message || "Server error while updating listing",
+        error: (err) => err.response?.data?.message || "Server error while updating listing",
       });
 
       redirectWithDelay("/my-uploads");
@@ -149,10 +126,6 @@ function EditListing() {
       ? currentImage
       : `${API_BASE_URL}${currentImage}`
     : "";
-
-  if (loading) {
-    return <h2 className="edit-loading">Loading listing...</h2>;
-  }
 
   return (
     <main className="edit-page">

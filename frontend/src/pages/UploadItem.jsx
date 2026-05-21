@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { API_BASE_URL } from "../config/api";
+
+// IMPORT YOUR CUSTOM AXIOS INSTANCE
+import api from "../config/api"; 
+
 import "./UploadItem.css";
 
 const initialFormData = {
@@ -59,27 +62,17 @@ function UploadItem() {
           uploadData.append("image", formData.image);
         }
 
-        const res = await fetch(`${API_BASE_URL}/api/listings`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: uploadData,
-        });
+        // CHANGED: Using unified api handler instance.
+        // It appends your headers automatically and signals your cold-start backdrop spinner.
+        const res = await api.post("/api/listings", uploadData);
 
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.message || "Failed to upload item");
-        }
-
-        return data;
+        return res.data;
       };
 
       await toast.promise(uploadPromise(), {
         loading: "Uploading your item...",
         success: "Item uploaded successfully!",
-        error: (err) => err.message || "Server error while uploading item",
+        error: (err) => err.response?.data?.message || "Server error while uploading item",
       });
 
       setFormData(initialFormData);

@@ -3,7 +3,10 @@ import { io } from "socket.io-client";
 import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
-import { API_BASE_URL } from "../config/api";
+
+// IMPORT YOUR CUSTOM AXIOS INSTANCE
+import api, { API_BASE_URL } from "../config/api"; 
+
 import "./ChatPage.css";
 
 function ChatPage() {
@@ -67,17 +70,9 @@ function ChatPage() {
     try {
       setLoadingConversations(true);
 
-      const res = await fetch(`${API_BASE_URL}/api/chat/conversations`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to fetch conversations");
-      }
+      // CHANGED: Using unified api client instance for automated token header mapping
+      const res = await api.get("/api/chat/conversations");
+      const data = res.data;
 
       const safeData = Array.isArray(data) ? data : [];
       setConversations(safeData);
@@ -101,7 +96,7 @@ function ChatPage() {
         return safeData[0] || null;
       });
     } catch (error) {
-      toast.error(error.message || "Could not load conversations");
+      toast.error(error.response?.data?.message || "Could not load conversations");
     } finally {
       setLoadingConversations(false);
     }
@@ -114,24 +109,12 @@ function ChatPage() {
       try {
         setLoadingMessages(true);
 
-        const res = await fetch(
-          `${API_BASE_URL}/api/chat/conversations/${conversationId}/messages`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        // CHANGED: Transitioned message array fetches to clean custom api Axios method
+        const res = await api.get(`/api/chat/conversations/${conversationId}/messages`);
 
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.message || "Failed to fetch messages");
-        }
-
-        setMessages(Array.isArray(data) ? data : []);
+        setMessages(Array.isArray(res.data) ? res.data : []);
       } catch (error) {
-        toast.error(error.message || "Could not load messages");
+        toast.error(error.response?.data?.message || "Could not load messages");
       } finally {
         setLoadingMessages(false);
       }
@@ -177,24 +160,13 @@ function ChatPage() {
       try {
         setSendingMessage(true);
 
-        const res = await fetch(`${API_BASE_URL}/api/chat/messages`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            conversationId: activeConversationId,
-            text: trimmedText,
-          }),
+        // CHANGED: Using custom instance for real-time outbound message payloads
+        const res = await api.post("/api/chat/messages", {
+          conversationId: activeConversationId,
+          text: trimmedText,
         });
 
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.message || "Failed to send message");
-        }
-
+        const data = res.data;
         setMessageText("");
 
         setMessages((prev) => {
@@ -209,7 +181,7 @@ function ChatPage() {
           createdAt: data.createdAt,
         });
       } catch (error) {
-        toast.error(error.message || "Could not send message");
+        toast.error(error.response?.data?.message || "Could not send message");
       } finally {
         setSendingMessage(false);
       }

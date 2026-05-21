@@ -3,7 +3,10 @@ import { useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
-import { API_BASE_URL } from "../config/api";
+
+// IMPORT YOUR CUSTOM AXIOS INSTANCE
+import api, { API_BASE_URL } from "../config/api"; 
+
 import "./ProductDetails.css";
 
 function ProductDetails() {
@@ -14,7 +17,6 @@ function ProductDetails() {
 
   const [item, setItem] = useState(null);
   const [allItems, setAllItems] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [chatLoading, setChatLoading] = useState(false);
 
   const token = localStorage.getItem("token");
@@ -22,30 +24,18 @@ function ProductDetails() {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        setLoading(true);
-
+        // CHANGED: Using Axios client concurrent execution. 
+        // Pre-configured interceptors will trigger your global waking spinner overlay gracefully.
         const [productRes, listingsRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/listings/${id}`),
-          fetch(`${API_BASE_URL}/api/listings`),
+          api.get(`/api/listings/${id}`),
+          api.get("/api/listings"),
         ]);
 
-        const productData = await productRes.json();
-        const listingsData = await listingsRes.json();
-
-        if (!productRes.ok) {
-          throw new Error(productData.message || "Failed to fetch product");
-        }
-
-        if (!listingsRes.ok) {
-          throw new Error(listingsData.message || "Failed to fetch listings");
-        }
-
-        setItem(productData);
-        setAllItems(Array.isArray(listingsData) ? listingsData : []);
+        setItem(productRes.data);
+        setAllItems(Array.isArray(listingsRes.data) ? listingsRes.data : []);
       } catch (error) {
-        toast.error(error.message || "Could not load product");
-      } finally {
-        setLoading(false);
+        console.error("Product fetching dashboard error:", error);
+        toast.error(error.response?.data?.message || "Could not load product");
       }
     };
 
@@ -123,23 +113,13 @@ function ProductDetails() {
     try {
       setChatLoading(true);
 
-      const res = await fetch(`${API_BASE_URL}/api/chat/conversations`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          receiverId: sellerId,
-          listingId: item._id,
-        }),
+      // CHANGED: Transitioned chat routing initialization payloads to use custom Axios client
+      const res = await api.post("/api/chat/conversations", {
+        receiverId: sellerId,
+        listingId: item._id,
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to start conversation");
-      }
+      const data = res.data;
 
       navigate("/chat", {
         state: {
@@ -148,21 +128,11 @@ function ProductDetails() {
         },
       });
     } catch (error) {
-      toast.error(error.message || "Could not open chat");
+      toast.error(error.response?.data?.message || "Could not open chat");
     } finally {
       setChatLoading(false);
     }
   };
-
-  if (loading) {
-    return (
-      <main className="product-details-page">
-        <div className="product-details-shell">
-          <p className="product-status-text">Loading product details...</p>
-        </div>
-      </main>
-    );
-  }
 
   if (!item) {
     return (

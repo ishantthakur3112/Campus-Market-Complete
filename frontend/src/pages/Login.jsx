@@ -2,7 +2,10 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
-import { API_BASE_URL } from "../config/api";
+
+// IMPORT YOUR CUSTOM AXIOS INSTANCE
+import api from "../config/api"; 
+
 import "./Login.css";
 
 function Login() {
@@ -37,29 +40,22 @@ function Login() {
       setLoading(true);
 
       const loginPromise = async () => {
-        const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.message || "Login failed");
-        }
+        // CHANGED: Use your unified api instance. 
+        // It reads from your config, automatically sets up JSON headers, and hooks into the spinner context.
+        const res = await api.post("/api/auth/login", formData);
+        
+        // Axios stores the backend's json response body inside the .data object
+        const data = res.data;
 
         login(data.user, data.token);
-
         return data;
       };
 
       await toast.promise(loginPromise(), {
         loading: "Logging you in...",
         success: "Login successful!",
-        error: (err) => err.message || "Login failed",
+        // Axios errors store the server's response object inside error.response
+        error: (err) => err.response?.data?.message || "Login failed",
       });
 
       redirectWithDelay(from);

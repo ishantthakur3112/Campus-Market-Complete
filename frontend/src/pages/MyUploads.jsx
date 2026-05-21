@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { API_BASE_URL } from "../config/api";
+
+// IMPORT YOUR CUSTOM AXIOS INSTANCE
+import api, { API_BASE_URL } from "../config/api"; 
+
 import "./MyUploads.css";
 
 function MyUploads() {
   const navigate = useNavigate();
   const [myItems, setMyItems] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const redirectWithDelay = (path, delay = 800) => {
@@ -21,29 +23,17 @@ function MyUploads() {
 
         if (!token) {
           toast.error("Please login first");
-          setLoading(false);
           redirectWithDelay("/login");
           return;
         }
 
-        const res = await fetch(`${API_BASE_URL}/api/listings/my`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        // CHANGED: Using unified api client instance for automated header mapping
+        const res = await api.get("/api/listings/my");
 
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.message || "Failed to fetch your uploads");
-        }
-
-        setMyItems(Array.isArray(data) ? data : []);
+        setMyItems(Array.isArray(res.data) ? res.data : []);
       } catch (error) {
         console.error("Fetch my uploads error:", error);
-        toast.error(error.message || "Server error while fetching your uploads");
-      } finally {
-        setLoading(false);
+        toast.error(error.response?.data?.message || "Server error while fetching your uploads");
       }
     };
 
@@ -63,29 +53,15 @@ function MyUploads() {
       }
 
       const deletePromise = async () => {
-        const res = await fetch(
-          `${API_BASE_URL}/api/listings/${deleteTarget._id}`,
-          {
-            method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.message || "Failed to delete listing");
-        }
-
-        return data;
+        // CHANGED: Swapped native fetch string parsing for clean Axios deletion verbs
+        const res = await api.delete(`/api/listings/${deleteTarget._id}`);
+        return res.data;
       };
 
       await toast.promise(deletePromise(), {
         loading: "Deleting listing...",
         success: "Listing deleted successfully!",
-        error: (err) => err.message || "Server error while deleting listing",
+        error: (err) => err.response?.data?.message || "Server error while deleting listing",
       });
 
       setMyItems((prev) =>
@@ -96,10 +72,6 @@ function MyUploads() {
       console.error("Delete error:", error);
     }
   };
-
-  if (loading) {
-    return <h2 className="uploads-loading">Loading your uploaded items...</h2>;
-  }
 
   return (
     <>

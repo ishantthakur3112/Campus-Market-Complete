@@ -1,5 +1,11 @@
-import { BrowserRouter, Routes, Route, ScrollRestoration } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
+import React, { useEffect } from "react";
+
+// Import your custom loading configuration modules
+import { LoadingProvider, useLoading } from "./context/LoadingContext";
+import api, { attachLoadingInterceptor } from "./config/api";
+
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Home from "./pages/Home";
@@ -14,10 +20,18 @@ import ChatPage from "./pages/ChatPage";
 import ProductDetails from "./pages/ProductDetails";
 import ScrollToTop from "./components/ScrollToTop";
 
-function App() {
+// Inner shell execution layer to map the runtime context accurately
+function AppContent() {
+  const { setIsLoading } = useLoading();
+
+  useEffect(() => {
+    // Links your Axios network instances with the global loading UI context
+    attachLoadingInterceptor(setIsLoading);
+  }, [setIsLoading]);
+
   return (
     <BrowserRouter>
-     <ScrollToTop/>
+      <ScrollToTop />
 
       <Navbar />
 
@@ -98,6 +112,15 @@ function App() {
         }}
       />
     </BrowserRouter>
+  );
+}
+
+// Master context definition layout wrapping the application
+function App() {
+  return (
+    <LoadingProvider>
+      <AppContent />
+    </LoadingProvider>
   );
 }
 
