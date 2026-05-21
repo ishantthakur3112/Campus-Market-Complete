@@ -12,6 +12,11 @@
   box-shadow: 0 14px 32px rgba(0, 0, 0, 0.16);
   transition: transform 0.25s ease, box-shadow 0.25s ease,
     border-color 0.25s ease;
+  
+  /* CRITICAL FIX: Restricts card width on widescreen viewports while staying centered */
+  max-width: 350px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .product-card:hover {
@@ -207,6 +212,8 @@
   .product-card {
     min-height: auto;
     border-radius: 18px;
+    /* Allows full card width on narrow mobile viewports */
+    max-width: 100%;
   }
 
   .product-image-wrap {
