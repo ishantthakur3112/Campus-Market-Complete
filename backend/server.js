@@ -45,20 +45,20 @@ app.use(
 
 app.use(express.json());
 
-// 3. Cloudinary API Configuration
+// 3. Cloudinary API Configuration Safeties
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || "",
+  api_key: process.env.CLOUDINARY_API_KEY || "",
+  api_secret: process.env.CLOUDINARY_API_SECRET || "",
 });
 
-// 4. Setup Cloudinary Storage Engine for Multer (Robust, Updated Syntax)
+// 4. Setup Robust Cloudinary Storage Engine for Multer (Fallback Functional Form)
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
     return {
       folder: "campus_market_listings",
-      format: "jpeg", // Dynamically sanitizes and unifies the file extension
+      format: "jpeg", // Forces unified compression format
       public_id: "listing-" + Date.now(),
     };
   },
@@ -303,7 +303,7 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-// Listing Routes
+// Listing Routes (With Explicit Un-Stringified Error Traps)
 app.post(
   "/api/listings",
   authMiddleware,
@@ -329,15 +329,15 @@ app.post(
         listing: newListing,
       });
     } catch (error) {
-      // Complete explicit error mapping block tracking string outputs
+      // Unrolls the error payload attributes clearly into Render logs
       console.error("--- DETAILED UPLOAD CRASH LOG ---");
-      console.error("Error Message Text:", error.message);
-      console.error("Full Error Object Details:", JSON.stringify(error, null, 2));
+      console.error("Error Message Text:", error.message || error);
+      if (error.stack) console.error("Stack Trace:", error.stack);
       console.error("---------------------------------");
       
       res
         .status(500)
-        .json({ message: "Failed to create listing", error: error.message });
+        .json({ message: "Failed to create listing", error: error.message || "Unknown Upload Error" });
     }
   }
 );
