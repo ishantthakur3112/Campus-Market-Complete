@@ -229,7 +229,7 @@ const deleteFromCloudinary = async (imageUrl) => {
     const folderIndex = urlParts.indexOf('campus_market_listings');
     if (folderIndex !== -1) {
       const publicIdWithExtension = urlParts.slice(folderIndex).join('/');
-      const publicId = publicIdWithExtension.split('.')[0]; // Extracts 'campus_market_listings/filename'
+      const publicId = publicIdWithExtension.split('.')[0]; 
       await cloudinary.uploader.destroy(publicId);
       console.log(`Cloudinary asset destroyed successfully: ${publicId}`);
     }
@@ -326,6 +326,12 @@ app.post(
         listing: newListing,
       });
     } catch (error) {
+      // CHANGED: Force complete explicit string logging into your Render console to trace the exact bug lines
+      console.error("--- DETAILED UPLOAD CRASH LOG ---");
+      console.error("Error Message Text:", error.message);
+      console.error("Full Error Object Details:", JSON.stringify(error, null, 2));
+      console.error("---------------------------------");
+      
       res
         .status(500)
         .json({ message: "Failed to create listing", error: error.message });
@@ -401,7 +407,6 @@ app.delete("/api/listings/:id", authMiddleware, async (req, res) => {
       return res.status(403).json({ message: "Not allowed" });
     }
 
-    // Clear asset from Cloudinary storage bucket seamlessly
     await deleteFromCloudinary(listing.image);
 
     await Listing.findByIdAndDelete(req.params.id);
@@ -439,8 +444,6 @@ app.put(
 
       if (req.file) {
         updateFields.image = req.file.path; 
-
-        // Purge old image from cloud bucket now that a replacement is present
         await deleteFromCloudinary(listing.image);
       }
 
@@ -625,10 +628,8 @@ app.post("/api/chat/messages", authMiddleware, async (req, res) => {
       updatedAt: populatedMessage.updatedAt,
     };
 
-    // Broadcast live to the shared conversation room
     io.to(conversationId.toString()).emit("new-message", socketMessage);
 
-    // Sync live thread details for sidebars
     const conversationUpdatePayload = {
       conversationId: conversationId.toString(),
       lastMessage: trimmedText,
