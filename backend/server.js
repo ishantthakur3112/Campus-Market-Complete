@@ -21,11 +21,13 @@ const MONGO_URI =
   "mongodb+srv://USERNAME:PASSWORD@clustername.mongodb.net/campusmarket?retryWrites=true&w=majority";
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
+// 1. Configure allowed origins array
 const allowedOrigins = [FRONTEND_URL];
 if (process.env.LIVE_FRONTEND_URL) {
   allowedOrigins.push(process.env.LIVE_FRONTEND_URL);
 }
 
+// 2. Express CORS Configuration
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -39,21 +41,35 @@ app.use(
 );
 
 app.use(express.json());
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+// Ensure uploads directory exists locally/temporarily in production
+const uploadsDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+app.use("/uploads", express.static(uploadsDir));
+
+// 3. Socket.io CORS Configuration (Production Synced)
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by Socket.io CORS"));
+    },
     methods: ["GET", "POST"],
     credentials: true,
   },
 });
 
+// Database Connection
 mongoose
   .connect(MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.log(err));
+  .then(() => console.log("MongoDB connected successfully"))
+  .catch((err) => console.error("MongoDB connection error:", err));
 
+// --- Schemas & Models ---
 const userSchema = new mongoose.Schema({
   name: String,
   email: { type: String, unique: true },
@@ -133,6 +149,7 @@ const Listing = mongoose.model("Listing", listingSchema);
 const Conversation = mongoose.model("Conversation", conversationSchema);
 const Message = mongoose.model("Message", messageSchema);
 
+// --- File Upload Setup ---
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "uploads/");
@@ -144,6 +161,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+// --- Middlewares ---
 const authMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
@@ -162,6 +180,7 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
+// --- Socket.io Authentication Middleware ---
 io.use((socket, next) => {
   try {
     const token = socket.handshake.auth?.token;
@@ -178,6 +197,7 @@ io.use((socket, next) => {
   }
 });
 
+// --- Socket.io Event Handling ---
 io.on("connection", (socket) => {
   const userId = socket.user.id;
   socket.join(userId.toString());
@@ -199,10 +219,13 @@ io.on("connection", (socket) => {
   });
 });
 
+// --- API Endpoints ---
+
 app.get("/", (req, res) => {
-  res.send("CampusMarket backend running");
+  res.send("CampusMarket backend running production instance");
 });
 
+// Auth Routes
 app.post("/api/auth/signup", async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -258,6 +281,7 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
+// Listing Routes
 app.post(
   "/api/listings",
   authMiddleware,
@@ -422,6 +446,7 @@ app.put(
   }
 );
 
+// Chat Conversation Routes
 app.post("/api/chat/conversations", authMiddleware, async (req, res) => {
   try {
     const { receiverId, listingId } = req.body;
@@ -522,6 +547,7 @@ app.get(
   }
 );
 
+// Real-Time Messaging Endpoint
 app.post("/api/chat/messages", authMiddleware, async (req, res) => {
   try {
     const { conversationId, text } = req.body;
@@ -581,8 +607,10 @@ app.post("/api/chat/messages", authMiddleware, async (req, res) => {
       updatedAt: populatedMessage.updatedAt,
     };
 
+    // Broadcast live to the shared conversation room
     io.to(conversationId.toString()).emit("new-message", socketMessage);
 
+    // Sync live thread details for sidebars
     const conversationUpdatePayload = {
       conversationId: conversationId.toString(),
       lastMessage: trimmedText,
@@ -607,6 +635,7 @@ app.post("/api/chat/messages", authMiddleware, async (req, res) => {
   }
 });
 
+// Start Server instance tied cleanly with HTTP wrappers for Socket connections
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server executing securely on port ${PORT}`);
 });
