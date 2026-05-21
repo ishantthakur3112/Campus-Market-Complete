@@ -6,13 +6,9 @@ const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
-const path = require("path");
 const http = require("http");
 const { Server } = require("socket.io");
-
-// Cloudinary Drivers
 const cloudinary = require("cloudinary").v2;
-const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
 const app = express();
 const server = http.createServer(app);
@@ -22,7 +18,6 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_secret_key_here";
 const MONGO_URI =
   process.env.MONGO_URI ||
   "mongodb+srv://USERNAME:PASSWORD@clustername.mongodb.net/campusmarket?retryWrites=true&w=majority";
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 // 1. Configure allowed origins array
 const allowedOrigins = [
@@ -45,28 +40,18 @@ app.use(
 
 app.use(express.json());
 
-// 3. Cloudinary API Configuration Safeties
+// 3. Cloudinary API Configuration
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || "",
-  api_key: process.env.CLOUDINARY_API_KEY || "",
-  api_secret: process.env.CLOUDINARY_API_SECRET || "",
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// 4. Setup Robust Cloudinary Storage Engine for Multer (Fallback Functional Form)
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: async (req, file) => {
-    return {
-      folder: "campus_market_listings",
-      format: "jpeg", // Forces unified compression format
-      public_id: "listing-" + Date.now(),
-    };
-  },
-});
-
+// 4. CHANGED: Using clean, crash-proof Memory Storage configuration
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-// 5. Socket.io CORS Configuration (Production Synced)
+// 5. Socket.io CORS Configuration
 const io = new Server(server, {
   cors: {
     origin: function (origin, callback) {
@@ -100,7 +85,7 @@ const listingSchema = new mongoose.Schema(
     price: Number,
     category: String,
     condition: String,
-    image: String, // Stores secure absolute web links from Cloudinary
+    image: String, 
     seller: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -237,7 +222,7 @@ const deleteFromCloudinary = async (imageUrl) => {
       console.log(`Cloudinary asset destroyed successfully: ${publicId}`);
     }
   } catch (err) {
-    console.error("Cloudinary asset destruction failure wrapper warning:", err.message);
+    console.error("Cloudinary asset destruction failure:", err.message);
   }
 };
 
@@ -303,7 +288,7 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-// Listing Routes (With Explicit Un-Stringified Error Traps)
+// Listing Routes
 app.post(
   "/api/listings",
   authMiddleware,
@@ -311,6 +296,28 @@ app.post(
   async (req, res) => {
     try {
       const { title, description, price, category, condition } = req.body;
+      let cloudinaryUrl = "";
+
+      // CHANGED: Direct streaming upload using buffer values
+      if (req.file) {
+        const uploadPromise = () => {
+          return new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+              {
+                folder: "campus_market_listings",
+                format: "jpeg",
+                public_id: "listing-" + Date.now(),
+              },
+              (error, result) => {
+                if (error) return reject(error);
+                resolve(result.secure_url);
+              }
+            );
+            stream.end(req.file.buffer);
+          });
+        };
+        cloudinaryUrl = await uploadPromise();
+      }
 
       const newListing = new Listing({
         title,
@@ -318,7 +325,7 @@ app.post(
         price,
         category,
         condition,
-        image: req.file ? req.file.path : "", 
+        image: cloudinaryUrl, 
         seller: req.user.id,
       });
 
@@ -329,15 +336,13 @@ app.post(
         listing: newListing,
       });
     } catch (error) {
-      // Unrolls the error payload attributes clearly into Render logs
       console.error("--- DETAILED UPLOAD CRASH LOG ---");
       console.error("Error Message Text:", error.message || error);
-      if (error.stack) console.error("Stack Trace:", error.stack);
       console.error("---------------------------------");
       
       res
         .status(500)
-        .json({ message: "Failed to create listing", error: error.message || "Unknown Upload Error" });
+        .json({ message: "Failed to create listing", error: error.message || "Upload failed" });
     }
   }
 );
@@ -445,8 +450,25 @@ app.put(
       const { title, description, price, category, condition } = req.body;
       let updateFields = { title, description, price, category, condition };
 
+      // CHANGED: Direct streaming upload method linked inside PUT logic
       if (req.file) {
-        updateFields.image = req.file.path; 
+        const uploadPromise = () => {
+          return new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+              {
+                folder: "campus_market_listings",
+                format: "jpeg",
+                public_id: "listing-" + Date.now(),
+              },
+              (error, result) => {
+                if (error) return reject(error);
+                resolve(result.secure_url);
+              }
+            );
+            stream.end(req.file.buffer);
+          });
+        };
+        updateFields.image = await uploadPromise();
         await deleteFromCloudinary(listing.image);
       }
 
