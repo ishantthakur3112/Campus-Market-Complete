@@ -6,10 +6,13 @@ const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
-const fs = require("fs");
 const path = require("path");
 const http = require("http");
 const { Server } = require("socket.io");
+
+// Cloudinary Drivers
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
 const app = express();
 const server = http.createServer(app);
@@ -26,6 +29,7 @@ const allowedOrigins = [
   "http://localhost:5173",
   "https://campus-market-complete.vercel.app"
 ];
+
 // 2. Express CORS Configuration
 app.use(
   cors({
@@ -41,14 +45,25 @@ app.use(
 
 app.use(express.json());
 
-// Ensure uploads directory exists locally/temporarily in production
-const uploadsDir = path.join(__dirname, "uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-app.use("/uploads", express.static(uploadsDir));
+// 3. Cloudinary API Configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-// 3. Socket.io CORS Configuration (Production Synced)
+// 4. Setup Cloudinary Storage Engine for Multer
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "campus_market_listings", // Automatically creates folder in your Cloudinary account
+    allowed_formats: ["jpg", "jpeg", "png", "webp"],
+  },
+});
+
+const upload = multer({ storage: storage });
+
+// 5. Socket.io CORS Configuration (Production Synced)
 const io = new Server(server, {
   cors: {
     origin: function (origin, callback) {
@@ -82,7 +97,7 @@ const listingSchema = new mongoose.Schema(
     price: Number,
     category: String,
     condition: String,
-    image: String,
+    image: String, // Stores secure absolute web links from Cloudinary
     seller: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -148,18 +163,6 @@ const Listing = mongoose.model("Listing", listingSchema);
 const Conversation = mongoose.model("Conversation", conversationSchema);
 const Message = mongoose.model("Message", messageSchema);
 
-// --- File Upload Setup ---
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/");
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
-  },
-});
-
-const upload = multer({ storage });
-
 // --- Middlewares ---
 const authMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -218,10 +221,27 @@ io.on("connection", (socket) => {
   });
 });
 
+// --- Helper Function for Cloudinary Asset Removal ---
+const deleteFromCloudinary = async (imageUrl) => {
+  if (!imageUrl) return;
+  try {
+    const urlParts = imageUrl.split('/');
+    const folderIndex = urlParts.indexOf('campus_market_listings');
+    if (folderIndex !== -1) {
+      const publicIdWithExtension = urlParts.slice(folderIndex).join('/');
+      const publicId = publicIdWithExtension.split('.')[0]; // Extracts 'campus_market_listings/filename'
+      await cloudinary.uploader.destroy(publicId);
+      console.log(`Cloudinary asset destroyed successfully: ${publicId}`);
+    }
+  } catch (err) {
+    console.error("Cloudinary asset destruction failure wrapper warning:", err.message);
+  }
+};
+
 // --- API Endpoints ---
 
 app.get("/", (req, res) => {
-  res.send("CampusMarket backend running production instance");
+  res.send("CampusMarket backend running production instance with Cloudinary active");
 });
 
 // Auth Routes
@@ -295,14 +315,14 @@ app.post(
         price,
         category,
         condition,
-        image: req.file ? `/uploads/${req.file.filename}` : "",
+        image: req.file ? req.file.path : "", 
         seller: req.user.id,
       });
 
       await newListing.save();
 
       res.status(201).json({
-        message: "Listing created successfully",
+        message: "Listing created successfully on Cloudinary",
         listing: newListing,
       });
     } catch (error) {
@@ -381,16 +401,12 @@ app.delete("/api/listings/:id", authMiddleware, async (req, res) => {
       return res.status(403).json({ message: "Not allowed" });
     }
 
-    if (listing.image) {
-      const imagePath = path.join(__dirname, listing.image);
-      fs.unlink(imagePath, (err) => {
-        if (err) console.log("Image delete warning:", err.message);
-      });
-    }
+    // Clear asset from Cloudinary storage bucket seamlessly
+    await deleteFromCloudinary(listing.image);
 
     await Listing.findByIdAndDelete(req.params.id);
 
-    res.status(200).json({ message: "Listing deleted successfully" });
+    res.status(200).json({ message: "Listing and media file deleted successfully" });
   } catch (error) {
     res
       .status(500)
@@ -408,13 +424,6 @@ app.put(
         return res.status(400).json({ message: "Invalid listing id" });
       }
 
-      const { title, description, price, category, condition } = req.body;
-      let updateFields = { title, description, price, category, condition };
-
-      if (req.file) {
-        updateFields.image = `/uploads/${req.file.filename}`;
-      }
-
       const listing = await Listing.findById(req.params.id);
 
       if (!listing) {
@@ -423,6 +432,16 @@ app.put(
 
       if (listing.seller.toString() !== req.user.id) {
         return res.status(403).json({ message: "Not allowed" });
+      }
+
+      const { title, description, price, category, condition } = req.body;
+      let updateFields = { title, description, price, category, condition };
+
+      if (req.file) {
+        updateFields.image = req.file.path; 
+
+        // Purge old image from cloud bucket now that a replacement is present
+        await deleteFromCloudinary(listing.image);
       }
 
       const updatedListing = await Listing.findByIdAndUpdate(
@@ -634,7 +653,6 @@ app.post("/api/chat/messages", authMiddleware, async (req, res) => {
   }
 });
 
-// Start Server instance tied cleanly with HTTP wrappers for Socket connections
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`Server executing securely on port ${PORT}`);
 });
