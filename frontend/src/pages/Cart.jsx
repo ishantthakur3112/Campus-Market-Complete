@@ -1,5 +1,6 @@
 import "./Cart.css";
 import toast from "react-hot-toast";
+import { useState } from "react";
 import { useCart } from "../context/CartContext";
 
 function Cart() {
@@ -13,14 +14,30 @@ function Cart() {
     clearCart,
   } = useCart();
 
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("cod");
+
   const handleCheckout = () => {
     if (cartItems.length === 0) {
       toast.error("Your cart is empty", { id: "checkout-empty" });
       return;
     }
 
-    toast.success("Order placed successfully!", { id: "checkout-success" });
+    setShowCheckout(true);
+  };
+
+  const handlePlaceOrder = () => {
+    const messages = {
+      qr: "Please scan the QR code and complete payment.",
+      cod: "Cash on Delivery selected.",
+      meetup:
+        "In-person delivery selected. Buyer and seller will meet and exchange money directly.",
+    };
+
+    toast.success(messages[paymentMethod], { id: "order-success" });
     clearCart();
+    setShowCheckout(false);
+    setPaymentMethod("cod");
   };
 
   return (
@@ -93,10 +110,83 @@ function Cart() {
                 Proceed to Checkout
               </button>
 
-              <button className="continue-btn" onClick={clearCart}>
+              <button className="continue-btn" onClick={() => clearCart()}>
                 Clear Cart
               </button>
             </div>
+          </div>
+        )}
+
+        {showCheckout && (
+          <div className="checkout-panel">
+            <div className="checkout-header">
+              <h2>Select Payment Method</h2>
+              <button
+                className="close-checkout-btn"
+                onClick={() => setShowCheckout(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="payment-options">
+              <label className="payment-option">
+                <input
+                  type="radio"
+                  name="payment"
+                  value="qr"
+                  checked={paymentMethod === "qr"}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                />
+                <span>QR Payment</span>
+              </label>
+
+              <label className="payment-option">
+                <input
+                  type="radio"
+                  name="payment"
+                  value="cod"
+                  checked={paymentMethod === "cod"}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                />
+                <span>Cash on Delivery</span>
+              </label>
+
+              <label className="payment-option">
+                <input
+                  type="radio"
+                  name="payment"
+                  value="meetup"
+                  checked={paymentMethod === "meetup"}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                />
+                <span>In-person Delivery</span>
+              </label>
+            </div>
+
+            {paymentMethod === "qr" && (
+              <div className="qr-box">
+                <p>Scan this QR code to pay:</p>
+                <img src="/qr-code.png" alt="QR Code" className="qr-image" />
+              </div>
+            )}
+
+            {paymentMethod === "cod" && (
+              <p className="checkout-note">
+                You will pay in cash when the product is delivered.
+              </p>
+            )}
+
+            {paymentMethod === "meetup" && (
+              <p className="checkout-note">
+                Buyer and seller will meet in person, inspect the product, and
+                exchange money directly.
+              </p>
+            )}
+
+            <button className="place-order-btn" onClick={handlePlaceOrder}>
+              Place Order
+            </button>
           </div>
         )}
       </div>
