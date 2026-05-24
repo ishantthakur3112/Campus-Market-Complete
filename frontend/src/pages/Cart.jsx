@@ -38,7 +38,7 @@ function Cart() {
             <p>Add some products to continue shopping on CampusMarket.</p>
           </div>
         ) : (
-          <>
+          <div className="cart-content">
             <div className="cart-list">
               {cartItems.map((item) => (
                 <div className="cart-item" key={item._id}>
@@ -97,7 +97,7 @@ function Cart() {
                 Clear Cart
               </button>
             </div>
-          </>
+          </div>
         )}
       </div>
     </main>
