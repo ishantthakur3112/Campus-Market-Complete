@@ -20,7 +20,7 @@ function Cart() {
     }
 
     toast.success("Order placed successfully!", { id: "checkout-success" });
-    clearCart(false);
+    clearCart();
   };
 
   return (
@@ -93,7 +93,7 @@ function Cart() {
                 Proceed to Checkout
               </button>
 
-              <button className="continue-btn" onClick={() => clearCart()}>
+              <button className="continue-btn" onClick={clearCart}>
                 Clear Cart
               </button>
             </div>
