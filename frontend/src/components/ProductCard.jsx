@@ -41,7 +41,11 @@ function ProductCard({ item }) {
 
   const handleAddToCart = (e) => {
     e.stopPropagation();
-    addToCart(item);
+    addToCart({
+      ...item,
+      imageUrl,
+      image: imageUrl,
+    });
   };
 
   const handleMessageSeller = async (e) => {
@@ -129,7 +133,6 @@ function ProductCard({ item }) {
         </h3>
 
         <p className="product-desc">{description}</p>
-
         <p className="product-price">{price}</p>
 
         {(category || condition || sellerName) && (

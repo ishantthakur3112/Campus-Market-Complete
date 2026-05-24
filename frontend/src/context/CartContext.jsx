@@ -21,7 +21,13 @@ export function CartProvider({ children }) {
         );
       }
 
-      return [...prev, { ...product, quantity: 1 }];
+      return [
+        ...prev,
+        {
+          ...product,
+          quantity: 1,
+        },
+      ];
     });
 
     if (wasExisting) {

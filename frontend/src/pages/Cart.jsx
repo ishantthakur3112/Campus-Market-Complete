@@ -25,14 +25,12 @@ function Cart() {
 
   return (
     <main className="cart-page">
-      <div className="cart-container">
-        <div className="cart-header">
-          <p className="cart-tag">Your basket</p>
-          <h1>Shopping Cart</h1>
-          <p className="cart-subtext">
-            Review selected items before proceeding to checkout.
-          </p>
-        </div>
+      <div className="cart-shell">
+        <p className="cart-tag">Your Basket</p>
+        <h1>Shopping Cart</h1>
+        <p className="cart-subtext">
+          Review selected items before proceeding to checkout.
+        </p>
 
         {cartItems.length === 0 ? (
           <div className="cart-empty">
@@ -40,17 +38,32 @@ function Cart() {
             <p>Add some products to continue shopping on CampusMarket.</p>
           </div>
         ) : (
-          <div className="cart-layout">
-            <div className="cart-items">
+          <>
+            <div className="cart-list">
               {cartItems.map((item) => (
-                <div className="cart-card" key={item._id}>
-                  <div className="cart-info">
+                <div className="cart-item" key={item._id}>
+                  <img
+                    src={
+                      item.imageUrl ||
+                      item.image ||
+                      item.image?.secure_url ||
+                      item.images?.[0] ||
+                      "/placeholder.png"
+                    }
+                    alt={item.title}
+                    className="cart-item-image"
+                    onError={(e) => {
+                      e.currentTarget.src = "/placeholder.png";
+                    }}
+                  />
+
+                  <div className="cart-item-info">
                     <h3>{item.title}</h3>
                     <p>
                       Seller:{" "}
                       {item.seller?.name || item.seller || "Campus Seller"}
                     </p>
-                    <span>₹{item.price}</span>
+                    <p className="cart-price">₹{item.price}</p>
                   </div>
 
                   <div className="cart-actions">
@@ -71,28 +84,20 @@ function Cart() {
               ))}
             </div>
 
-            <aside className="cart-summary">
-              <h2>Order Summary</h2>
-
-              <div className="summary-row">
-                <span>Total Items</span>
-                <span>{totalItems}</span>
-              </div>
-
-              <div className="summary-row">
-                <span>Total Amount</span>
-                <span>₹{totalAmount}</span>
-              </div>
+            <div className="cart-summary">
+              <h3>Order Summary</h3>
+              <p>Total Items: {totalItems}</p>
+              <p>Total Amount: ₹{totalAmount}</p>
 
               <button className="checkout-btn" onClick={handleCheckout}>
                 Proceed to Checkout
               </button>
 
-              <button className="clear-cart-btn" onClick={() => clearCart()}>
+              <button className="continue-btn" onClick={() => clearCart()}>
                 Clear Cart
               </button>
-            </aside>
-          </div>
+            </div>
+          </>
         )}
       </div>
     </main>
