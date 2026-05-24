@@ -22,7 +22,6 @@ function Cart() {
       toast.error("Your cart is empty", { id: "checkout-empty" });
       return;
     }
-
     setShowCheckout(true);
   };
 
@@ -125,7 +124,7 @@ function Cart() {
                 className="close-checkout-btn"
                 onClick={() => setShowCheckout(false)}
               >
-                ×
+                
               </button>
             </div>
 
