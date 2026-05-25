@@ -1,3 +1,7 @@
+* {
+  box-sizing: border-box;
+}
+
 .product-card {
   background: rgba(17, 27, 43, 0.74);
   border: 1px solid rgba(124, 236, 255, 0.14);
@@ -23,12 +27,13 @@
   overflow: hidden;
   cursor: pointer;
   background: linear-gradient(180deg, rgba(9, 16, 30, 0.7), rgba(9, 16, 30, 0.9));
+  position: relative;
 }
 
 .product-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: cover; /* Keeps image ratios perfect across all card instances */
   display: block;
   transition: transform 0.35s ease;
 }
@@ -42,7 +47,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  flex: 1;
+  flex: 1; /* Pushes content down cleanly to force bottom card parity */
 }
 
 .product-title {
@@ -50,6 +55,10 @@
   color: #ffffff;
   font-size: 1.2rem;
   line-height: 1.35;
+  /* Truncates long item names cleanly onto a single line to keep card grids uniform */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .product-title.clickable {
@@ -66,10 +75,11 @@
   line-height: 1.6;
   font-size: 0.95rem;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+  -webkit-line-clamp: 2; /* Slices description lengths equally to prevent stretching boxes */
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  min-height: 3.2em; /* Keeps empty layout space reserved even if items lack short text */
 }
 
 .product-price {
@@ -83,10 +93,11 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  min-height: 32px; /* Keeps meta row height aligned even if elements vary */
 }
 
 .meta-pill {
-  padding: 7px 11px;
+  padding: 6px 12px;
   border-radius: 999px;
   background: rgba(124, 236, 255, 0.1);
   border: 1px solid rgba(124, 236, 255, 0.16);
@@ -96,9 +107,10 @@
 }
 
 .product-actions {
-  display: grid;
-  gap: 10px;
-  margin-top: auto;
+  display: flex;
+  flex-direction: column; /* Stacks button setups elegantly across standard mobile viewpoints */
+  gap: 8px;
+  margin-top: auto; /* Aligns all actionable components flush along bottom line */
   padding-top: 6px;
 }
 
@@ -112,6 +124,7 @@
   font-weight: 700;
   cursor: pointer;
   transition: 0.25s ease;
+  text-align: center;
 }
 
 .message-btn {
@@ -123,7 +136,7 @@
 .add-cart-btn {
   background: linear-gradient(135deg, #19d7ff, #00f0ff);
   color: #04101b;
-  box-shadow: 0 8px 24px rgba(0, 229, 255, 0.22);
+  box-shadow: 0 4px 14px rgba(0, 229, 255, 0.18);
 }
 
 .details-link-btn {
@@ -139,16 +152,34 @@
   opacity: 0.96;
 }
 
+/* ==========================================================================
+   RESPONSIVE DESIGN BREAKPOINTS
+   ========================================================================== */
 @media (max-width: 768px) {
   .product-info {
     padding: 16px;
+    gap: 10px;
   }
 
   .product-title {
     font-size: 1.1rem;
   }
 
+  .product-desc {
+    font-size: 0.9rem;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
   .meta-pill {
     font-size: 0.78rem;
+    padding: 5px 10px;
+  }
+  
+  .message-btn,
+  .add-cart-btn,
+  .details-link-btn {
+    padding: 10px 12px;
+    font-size: 0.85rem;
   }
 }

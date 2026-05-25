@@ -273,11 +273,14 @@
   opacity: 0.96;
 }
 
+/* ==========================================================================
+   PRODUCTS GRID: Updated with auto-fill to handle small item sets nicely
+   ========================================================================== */
 .products-grid {
   width: min(1200px, 100%);
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 24px;
 }
 
@@ -311,6 +314,9 @@
   padding-top: 140px;
 }
 
+/* ==========================================================================
+   RESPONSIVE DESIGN BREAKPOINTS
+   ========================================================================== */
 @media (max-width: 768px) {
   .hero-section {
     min-height: 58vh;
@@ -345,5 +351,19 @@
 
   .stat-box {
     min-width: 100%;
+  }
+
+  /* Adjust grid layout column limits slightly on mid-sized mobile displays */
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Forces a clean stacked layout on compact mobile devices */
+  .products-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 }
